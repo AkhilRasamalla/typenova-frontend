@@ -1,0 +1,98 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --primary-color: #0a0014;
+  --secondary-color: #263152;
+  --accent-color: #00ffff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: "Ubuntu Mono", sans-serif;
+}
+
+.halo-screen {
+  background: linear-gradient(
+    to right,
+    rgba(77, 211, 255, 0.2),
+    rgba(26, 179, 255, 0.2),
+    rgba(77, 211, 255, 0.2),
+    rgba(26, 179, 255, 0.2)
+  );
+  border: 1px solid var(--accent-color);
+  /* text-shadow: 0 0 1px #4dd2ff, 0 0 10px #4dd2ff, 0 0 1px #1ab3ff,
+    0 0 10px #1ab3ff; */
+  box-shadow: 0 0 1px #4dd2ff, 0 0 10px #1ab3ff;
+}
+
+.glow {
+  color: white;
+  border: 2px solid var(--accent-color);
+  /* border-bottom: 1px solid var(--accent-color); */
+  background: linear-gradient(
+    to right,
+    rgba(77, 211, 255, 0.2),
+    rgba(26, 179, 255, 0.2),
+    rgba(77, 211, 255, 0.2),
+    rgba(26, 179, 255, 0.2)
+  );
+  text-shadow: 0 0 1px #4dd2ff, 0 0 10px #4dd2ff, 0 0 1px #1ab3ff,
+    0 0 10px #1ab3ff;
+  box-shadow: 0 0 5px #4dd2ff, 0 0 30px #4dd2ff, 0 0 5px #1ab3ff,
+    0 0 30px #1ab3ff;
+}
+
+.glow-blue {
+  background: linear-gradient(
+    to right,
+    rgba(77, 211, 255, 0.1),
+    rgba(26, 179, 255, 0.1),
+    rgba(77, 211, 255, 0.1),
+    rgba(26, 179, 255, 0.1)
+  );
+  text-shadow: 0 0 1px #4dd2ff, 0 0 10px #4dd2ff;
+  border-radius: 10px;
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 5px #4dd2ff, 0 0 30px #4dd2ff, 0 0 5px #1ab3ff,
+    0 0 30px #1ab3ff;
+  background: linear-gradient(
+    to right,
+    rgba(77, 211, 255, 0.5),
+    rgba(26, 179, 255, 0.5),
+    rgba(77, 211, 255, 0.5),
+    rgba(26, 179, 255, 0.5)
+  );
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.neon-blue {
+  color: #4dd9ff;
+  text-shadow: 0 0 1px #4dd9ff, 0 0 10px #33c9ff;
+}
+
+.neon-pink {
+  color: #ff00ff;
+  text-shadow: 0 0 1px #ff00ff, 0 0 10px #ff00ff;
+}
+
+.neon-green {
+  color: #39ff14;
+  text-shadow: 0 0 1px #39ff14, 0 0 10px #39ff14;
+}
+
+.neon-orange {
+  color: #ff6f00;
+  text-shadow: 0 0 1px #ff6f00, 0 0 10px #ff6f00;
+}
+
+.neon-red {
+  color: #ff003c;
+  text-shadow: 0 0 1px #ff003c, 0 0 10px #ff003c;
+}
