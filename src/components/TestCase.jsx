@@ -13,8 +13,15 @@ const TestCase = () => {
   const [selectedVoice, setSelectedVoice] = useState(null);
 
   useEffect(() => {
+    const synth =
+      typeof window !== "undefined"
+        ? window.speechSynthesis
+        : null;
+
+    if (!synth) return;
+
     const loadVoices = () => {
-      const availableVoices = window.speechSynthesis.getVoices();
+      const availableVoices = synth.getVoices();
 
       setVoices(availableVoices);
 
@@ -25,11 +32,11 @@ const TestCase = () => {
 
     loadVoices();
 
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    synth.onvoiceschanged = loadVoices;
 
     return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-      window.speechSynthesis.cancel();
+      synth.onvoiceschanged = null;
+      synth.cancel();
     };
   }, []);
 
@@ -44,9 +51,14 @@ const TestCase = () => {
   };
 
   const handleSpeak = () => {
-    if (!selectedVoice || !name) return;
+    const synth =
+      typeof window !== "undefined"
+        ? window.speechSynthesis
+        : null;
 
-    window.speechSynthesis.cancel();
+    if (!synth || !selectedVoice || !name) return;
+
+    synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(name);
 
@@ -55,7 +67,7 @@ const TestCase = () => {
     utterance.pitch = 1.1;
     utterance.volume = 1;
 
-    window.speechSynthesis.speak(utterance);
+    synth.speak(utterance);
   };
 
   return (
