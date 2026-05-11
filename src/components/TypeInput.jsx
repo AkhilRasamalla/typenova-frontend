@@ -28,27 +28,43 @@ const TypeInput = (props) => {
   const [index, setIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
 
-  // memory mode
+  // MEMORY MODE
   const [hiddenQuote, setHiddenQuote] = useState("");
 
-  // echo mode
+  // ECHO MODE
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voice, setVoice] = useState(null);
   const cancelSpeechRef = useRef(false);
   const [revealedQuote, setRevealedQuote] = useState("");
 
   const [progress, setProgress] = useState(0);
+
   const inputRef = useRef(null);
   const keySoundRef = useRef(null);
+
   const [startTime, setStartTime] = useState(null);
 
-  const { typingSound, volume, textColor, fontSize } =
-    useSettingsStore();
+  const {
+    typingSound,
+    volume,
+    textColor,
+    fontSize,
+  } = useSettingsStore();
 
-  let wpm, accuracy, time, reactionTime, errors;
+  let wpm,
+    accuracy,
+    time,
+    reactionTime,
+    errors;
 
   if (!multiplayer && bestStats) {
-    ({ wpm, accuracy, time, reactionTime, errors } = bestStats);
+    ({
+      wpm,
+      accuracy,
+      time,
+      reactionTime,
+      errors,
+    } = bestStats);
   }
 
   useEffect(() => {
@@ -63,7 +79,6 @@ const TypeInput = (props) => {
     };
   }, []);
 
-  // SAFE QUOTE SETUP
   useEffect(() => {
     const safeQuote = originalQuote || "";
 
@@ -75,13 +90,61 @@ const TypeInput = (props) => {
     setRevealedQuote("");
   }, [originalQuote]);
 
-  // Echo Mode Setup
+  // =========================
+  // MEMORY MODE
+  // =========================
+
   useEffect(() => {
-    if (gameMode === "Echo Mode" && originalQuote) {
+    if (
+      gameMode === "Memory Mode" &&
+      originalQuote
+    ) {
+      setHiddenQuote(originalQuote);
+
+      const timer = setTimeout(() => {
+        setHiddenQuote(
+          hideLetters(originalQuote)
+        );
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameMode, originalQuote]);
+
+  // =========================
+  // MIRROR MODE
+  // =========================
+
+  const reverseWords = (text) =>
+    (text || "")
+      .split(" ")
+      .map((w) =>
+        [...w].reverse().join("")
+      )
+      .join(" ");
+
+  const mirroredQuote =
+    gameMode === "Mirror Mode"
+      ? reverseWords(originalQuote || "")
+      : originalQuote || "";
+
+  // =========================
+  // ECHO MODE
+  // =========================
+
+  useEffect(() => {
+    if (
+      gameMode === "Echo Mode" &&
+      originalQuote
+    ) {
       const arr = (originalQuote || "")
         .split("")
         .map((ch, i) =>
-          ch === " " ? " " : i === 0 ? ch : "_"
+          ch === " "
+            ? " "
+            : i === 0
+            ? ch
+            : "_"
         )
         .join("");
 
@@ -89,9 +152,12 @@ const TypeInput = (props) => {
     }
   }, [gameMode, originalQuote]);
 
-  // Echo Auto Speak
   useEffect(() => {
-    if (gameMode === "Echo Mode" && originalQuote && voice) {
+    if (
+      gameMode === "Echo Mode" &&
+      originalQuote &&
+      voice
+    ) {
       const timer = setTimeout(() => {
         if (!isSpeaking) {
           speakQuote();
@@ -100,65 +166,34 @@ const TypeInput = (props) => {
 
       return () => clearTimeout(timer);
     }
-  }, [gameMode, originalQuote, voice, isSpeaking]);
-
-  // Memory Mode
-  useEffect(() => {
-    if (gameMode === "Memory Mode" && originalQuote) {
-      setHiddenQuote(originalQuote);
-
-      const timer = setTimeout(() => {
-        setHiddenQuote(hideLetters(originalQuote));
-      }, 10000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [gameMode, originalQuote]);
-
-  // Mirror Mode
-  const reverseWords = (text) =>
-    (text || "")
-      .split(" ")
-      .map((w) => [...w].reverse().join(""))
-      .join(" ");
-
-  const mirroredQuote =
-    gameMode === "Mirror Mode"
-      ? reverseWords(originalQuote || "")
-      : originalQuote || "";
+  }, [
+    gameMode,
+    originalQuote,
+    voice,
+    isSpeaking,
+  ]);
 
   useEffect(() => {
-    if (!showConfirm && inputRef.current) {
-      handleFocus();
-    }
-  }, [showConfirm]);
+    if (typeof window === "undefined")
+      return;
 
-  // Load Voice
-  useEffect(() => {
-    if (gameMode !== "Echo Mode") return;
-
-    if (typeof window === "undefined") return;
-
-    const synth = window.speechSynthesis;
+    const synth =
+      window.speechSynthesis;
 
     if (!synth) return;
 
     const loadVoice = () => {
-      const voices = synth.getVoices() || [];
+      const voices =
+        synth.getVoices() || [];
 
       const englishVoice =
         voices.find(
           (v) =>
-            v.lang &&
-            v.lang.startsWith("en") &&
-            v.name &&
-            v.name.includes("Google")
+            v.lang?.startsWith("en") &&
+            v.name?.includes("Google")
         ) ||
-        voices.find(
-          (v) =>
-            v.lang &&
-            v.lang.startsWith &&
-            v.lang.startsWith("en")
+        voices.find((v) =>
+          v.lang?.startsWith("en")
         ) ||
         voices[0];
 
@@ -173,13 +208,98 @@ const TypeInput = (props) => {
       synth.cancel();
       synth.onvoiceschanged = null;
     };
-  }, [gameMode]);
+  }, []);
+
+  const speakQuote = () => {
+    if (
+      gameMode !== "Echo Mode" ||
+      !originalQuote ||
+      !voice
+    )
+      return;
+
+    const synth =
+      window.speechSynthesis;
+
+    synth.cancel();
+
+    cancelSpeechRef.current = false;
+
+    setIsSpeaking(true);
+
+    const wordsArr =
+      originalQuote.split(" ");
+
+    const speakWord = (word) =>
+      new Promise((resolve) => {
+        if (
+          cancelSpeechRef.current
+        ) {
+          return resolve();
+        }
+
+        const utterance =
+          new SpeechSynthesisUtterance(
+            word
+          );
+
+        utterance.voice = voice;
+        utterance.rate = 0.95;
+        utterance.pitch = 0.95;
+
+        utterance.onend = resolve;
+
+        synth.speak(utterance);
+      });
+
+    const startSpeaking =
+      async () => {
+        for (
+          let i = 0;
+          i < wordsArr.length;
+          i++
+        ) {
+          if (
+            cancelSpeechRef.current
+          )
+            break;
+
+          await speakWord(
+            wordsArr[i]
+          );
+
+          await new Promise((r) =>
+            setTimeout(r, 2500)
+          );
+        }
+
+        setIsSpeaking(false);
+      };
+
+    startSpeaking();
+  };
+
+  const cancelSpeech = () => {
+    cancelSpeechRef.current = true;
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsSpeaking(false);
+  };
 
   useEffect(() => {
-    if (gameMode !== "Echo Mode") {
-      cancelSpeech();
+    if (
+      !showConfirm &&
+      inputRef.current
+    ) {
+      handleFocus();
     }
-  }, [gameMode]);
+  }, [showConfirm]);
 
   const handleStart = () => {
     if (!hasStarted) {
@@ -201,182 +321,134 @@ const TypeInput = (props) => {
     setIsFocused(true);
   };
 
-  // SPEAK FUNCTION
-  const speakQuote = () => {
-    if (gameMode !== "Echo Mode") return;
-    if (!originalQuote) return;
-    if (!voice) return;
+  // =========================
+  // ACTIVE QUOTE
+  // =========================
 
-    if (typeof window === "undefined") return;
+  const activeQuote =
+    gameMode === "Mirror Mode"
+      ? mirroredQuote
+      : gameMode === "Memory Mode"
+      ? hiddenQuote ||
+        originalQuote ||
+        ""
+      : gameMode === "Echo Mode"
+      ? revealedQuote ||
+        originalQuote ||
+        ""
+      : originalQuote || "";
 
-    const synth = window.speechSynthesis;
-
-    if (!synth) return;
-
-    synth.cancel();
-
-    cancelSpeechRef.current = false;
-
-    setIsSpeaking(true);
-
-    const wordsArr = (originalQuote || "").split(" ");
-
-    const speakWord = (word) =>
-      new Promise((resolve) => {
-        if (cancelSpeechRef.current) {
-          return resolve();
-        }
-
-        const utterance =
-          new SpeechSynthesisUtterance(word);
-
-        utterance.voice = voice;
-        utterance.rate = 0.95;
-        utterance.pitch = 0.95;
-        utterance.volume = 1;
-
-        utterance.onend = resolve;
-
-        synth.speak(utterance);
-      });
-
-    const startSpeaking = async () => {
-      for (let i = 0; i < wordsArr.length; i++) {
-        if (cancelSpeechRef.current) {
-          break;
-        }
-
-        await speakWord(wordsArr[i]);
-
-        await new Promise((r) =>
-          setTimeout(r, 2500)
-        );
-      }
-
-      setIsSpeaking(false);
-    };
-
-    startSpeaking();
-  };
-
-  // CANCEL SPEECH
-  const cancelSpeech = () => {
-    cancelSpeechRef.current = true;
-
-    if (typeof window !== "undefined") {
-      const synth = window.speechSynthesis;
-
-      if (synth) {
-        synth.cancel();
-      }
-    }
-
-    setIsSpeaking(false);
-  };
+  const validationQuote =
+    gameMode === "Mirror Mode"
+      ? mirroredQuote
+      : originalQuote || "";
 
   const displayWords =
-    gameMode === "Mirror Mode"
-      ? mirroredQuote.split(" ")
-      : gameMode === "Memory Mode"
-      ? (hiddenQuote || originalQuote || "").split(" ")
-      : gameMode === "Echo Mode"
-      ? (revealedQuote || originalQuote || "").split(" ")
-      : words;
+    activeQuote.split(" ");
 
   const originalWords =
-    (originalQuote || "").split(" ");
+    validationQuote.split(" ");
 
   const getIndex = (w, c) =>
     originalWords
       .slice(0, w)
-      .reduce((sum, word) => sum + word.length + 1, 0) +
-    c;
+      .reduce(
+        (sum, word) =>
+          sum + word.length + 1,
+        0
+      ) + c;
+
+  // =========================
+  // CHECK VALID
+  // =========================
 
   const checkValid = (e) => {
-    const sound = keySoundRef.current;
+    const sound =
+      keySoundRef.current;
 
     if (typingSound && sound) {
       sound.currentTime = 0;
       sound.volume = volume;
+
       sound.play().catch(() => {});
     }
 
-    const char = e.target.value.slice(-1);
+    const char =
+      e.target.value.slice(-1);
 
     if (!char) return;
-
-    if (!originalQuote) {
-      e.target.value = "";
-      return;
-    }
 
     const currIndex = index;
 
     const expectedChar =
-      originalQuote[currIndex] || "";
+      validationQuote[currIndex] ||
+      "";
 
     if (char === " ") {
       if (expectedChar === " ") {
-        setStatus((prev) => {
-          if (prev[currIndex] === "wrong") {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            [currIndex]: "correct",
-          };
-        });
+        setStatus((prev) => ({
+          ...prev,
+          [currIndex]: "correct",
+        }));
 
         setIndex(currIndex + 1);
       }
 
       e.target.value = "";
 
-      const newProgressSpace =
-        ((currIndex + 1) / (originalQuote || "").length) *
+      const newProgress =
+        ((currIndex + 1) /
+          validationQuote.length) *
         100;
 
-      setProgress(newProgressSpace);
+      setProgress(newProgress);
 
       if (multiplayer && roomId) {
-        socket.emit("updateProgress", {
-          roomId,
-          progress: newProgressSpace,
-        });
+        socket.emit(
+          "updateProgress",
+          {
+            roomId,
+            progress: newProgress,
+          }
+        );
       }
 
-      if (currIndex >= (originalQuote || "").length - 1) {
+      if (
+        currIndex >=
+        validationQuote.length - 1
+      ) {
         finishRun();
       }
 
       return;
     }
 
-    const correct = char === expectedChar;
+    const correct =
+      char === expectedChar;
 
-    setStatus((prev) => {
-      if (prev[currIndex] === "wrong") {
-        return prev;
-      }
+    setStatus((prev) => ({
+      ...prev,
+      [currIndex]: correct
+        ? "correct"
+        : "wrong",
+    }));
 
-      return {
-        ...prev,
-        [currIndex]: correct ? "correct" : "wrong",
-      };
-    });
+    if (
+      gameMode === "Echo Mode"
+    ) {
+      setRevealedQuote(
+        (prev) => {
+          const chars = (
+            prev ||
+            originalQuote
+          ).split("");
 
-    if (gameMode === "Echo Mode") {
-      setRevealedQuote((prev) => {
-        const chars = (
-          prev || originalQuote || ""
-        ).split("");
+          chars[currIndex] =
+            originalQuote[currIndex];
 
-        chars[currIndex] =
-          originalQuote[currIndex];
-
-        return chars.join("");
-      });
+          return chars.join("");
+        }
+      );
 
       setIndex(currIndex + 1);
     } else {
@@ -388,49 +460,69 @@ const TypeInput = (props) => {
     e.target.value = "";
 
     const newProgress =
-      ((currIndex + 1) / (originalQuote || "").length) *
+      ((currIndex + 1) /
+        validationQuote.length) *
       100;
 
     setProgress(newProgress);
 
     if (multiplayer && roomId) {
-      socket.emit("updateProgress", {
-        roomId,
-        progress: newProgress,
-      });
+      socket.emit(
+        "updateProgress",
+        {
+          roomId,
+          progress: newProgress,
+        }
+      );
     }
 
-    if (currIndex >= (originalQuote || "").length - 1) {
+    if (
+      currIndex >=
+      validationQuote.length - 1
+    ) {
       finishRun();
     }
   };
 
-  const finishRun = () => {
-    const typedChars = (quote || "").length;
+  // =========================
+  // FINISH RUN
+  // =========================
 
-    const errors = Object.values(status).filter(
-      (s) => s === "wrong"
-    ).length;
+  const finishRun = () => {
+    const typedChars =
+      validationQuote.length;
+
+    const errors =
+      Object.values(status).filter(
+        (s) => s === "wrong"
+      ).length;
 
     const endTime = Date.now();
 
     const elapsed = Math.max(
       1,
-      (endTime - (startTime || endTime)) / 1000
+      (endTime -
+        (startTime || endTime)) /
+        1000
     );
 
     const wpmLocal =
-      typedChars / 5 / (elapsed / 60);
+      typedChars /
+      5 /
+      (elapsed / 60);
 
     const accuracyLocal =
       typedChars === 0
         ? 0
-        : ((typedChars - errors) / typedChars) * 100;
+        : ((typedChars - errors) /
+            typedChars) *
+          100;
 
     if (!multiplayer) {
       const currentData = {
         wpm: wpmLocal,
-        accuracy: accuracyLocal,
+        accuracy:
+          accuracyLocal,
         errors,
         time: elapsed,
       };
@@ -439,18 +531,27 @@ const TypeInput = (props) => {
         saveStats(currentData);
       }
 
-      setCurrentStats(currentData);
+      setCurrentStats(
+        currentData
+      );
     }
 
     if (multiplayer && roomId) {
-      socket.emit("playerFinished", {
-        roomId,
-        wpm: wpmLocal,
-        accuracy: accuracyLocal,
-        time: elapsed,
-      });
+      socket.emit(
+        "playerFinished",
+        {
+          roomId,
+          wpm: wpmLocal,
+          accuracy:
+            accuracyLocal,
+          time: elapsed,
+        }
+      );
 
-      if (gameMode === "Tournament") {
+      if (
+        gameMode ===
+        "Tournament"
+      ) {
         setWaiting(true);
       }
     }
@@ -472,7 +573,8 @@ const TypeInput = (props) => {
       <div className="relative h-full w-full flex flex-col">
 
         {/* TOP BAR */}
-        <div className="w-full pt-24 px-6 md:px-16 lg:px-28">
+
+        <div className="w-full pt-24 px-6 md:px-16 lg:px-24">
           <Bar
             {...{
               wpm,
@@ -486,86 +588,129 @@ const TypeInput = (props) => {
               gameMode,
               handleFocus,
             }}
-            isSpeaking={isSpeaking}
+            isSpeaking={
+              isSpeaking
+            }
             onReplay={speakQuote}
             onStop={cancelSpeech}
-            onRefocus={handleFocus}
+            onRefocus={
+              handleFocus
+            }
           />
         </div>
 
         {/* QUOTE AREA */}
-        <div className="flex-1 flex items-center justify-center px-6 md:px-16 lg:px-28 pb-24">
+
+        <div className="flex-1 flex justify-center px-6 md:px-16 lg:px-24 pt-24">
           <div
             className={`
               w-full
-              max-w-6xl
+              max-w-5xl
+              mx-auto
               tracking-wider
-              font-extralight
+              font-light
               break-words
               ${styleMap[textColor]}
             `}
             onClick={handleFocus}
             style={{
               fontSize: `${fontSize}px`,
-              lineHeight: "1.9",
+              lineHeight: "2.4",
             }}
           >
-            {displayWords.map((word, w) => (
-              <span key={w}>
-                {(word || "").split("").map((ch, c) => {
-                  const i = getIndex(w, c);
+            {displayWords.map(
+              (word, w) => (
+                <span key={w}>
+                  {(word || "")
+                    .split("")
+                    .map(
+                      (
+                        ch,
+                        c
+                      ) => {
+                        const i =
+                          getIndex(
+                            w,
+                            c
+                          );
 
-                  const focus =
-                    isFocused && index === i;
+                        const focus =
+                          isFocused &&
+                          index ===
+                            i;
 
-                  const colorClass =
-                    status[i] === "wrong"
-                      ? "text-red-400"
-                      : status[i] === "correct"
-                      ? "text-gray-500"
-                      : "";
+                        const colorClass =
+                          status[
+                            i
+                          ] ===
+                          "wrong"
+                            ? "text-red-400"
+                            : status[
+                                i
+                              ] ===
+                              "correct"
+                            ? "text-gray-500"
+                            : "";
 
-                  const hiddenByEcho =
-                    gameMode === "Echo Mode" &&
-                    revealedQuote &&
-                    revealedQuote[i] === "_";
+                        const hiddenByEcho =
+                          gameMode ===
+                            "Echo Mode" &&
+                          revealedQuote &&
+                          revealedQuote[
+                            i
+                          ] ===
+                            "_";
 
-                  return (
-                    <span
-                      key={i}
-                      className={`
-                        transition-all duration-200
-                        ${
-                          focus
-                            ? "border-b-2 border-white"
-                            : ""
-                        }
-                        ${colorClass}
-                        ${
-                          hiddenByEcho
-                            ? "opacity-0"
-                            : "opacity-100"
-                        }
-                      `}
-                    >
-                      {ch}
+                        return (
+                          <span
+                            key={i}
+                            className={`
+                            transition-all duration-200
+                            ${
+                              focus
+                                ? "border-b-2 border-white"
+                                : ""
+                            }
+                            ${colorClass}
+                            ${
+                              hiddenByEcho
+                                ? "opacity-0"
+                                : "opacity-100"
+                            }
+                          `}
+                          >
+                            {ch}
+                          </span>
+                        );
+                      }
+                    )}
+
+                  {w <
+                    displayWords.length -
+                      1 && (
+                    <span>
+                      &nbsp;
                     </span>
-                  );
-                })}
-
-                {w < displayWords.length - 1 && (
-                  <span>&nbsp;</span>
-                )}
-              </span>
-            ))}
+                  )}
+                </span>
+              )
+            )}
 
             <input
               type="text"
               className="absolute opacity-0 pointer-events-none"
               ref={inputRef}
               onInput={checkValid}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              onFocus={() =>
+                setIsFocused(
+                  true
+                )
+              }
+              onBlur={() =>
+                setIsFocused(
+                  false
+                )
+              }
               autoComplete="off"
               spellCheck="false"
             />
@@ -573,15 +718,20 @@ const TypeInput = (props) => {
         </div>
 
         {/* START OVERLAY */}
+
         {!hasStarted &&
           !multiplayer &&
-          gameMode !== "Color Clash" && (
+          gameMode !==
+            "Color Clash" && (
             <div
               className="absolute inset-0 flex items-center justify-center backdrop-blur-sm cursor-pointer z-50"
-              onClick={handleStart}
+              onClick={
+                handleStart
+              }
             >
               <p className="text-2xl md:text-3xl neon-blue">
-                Click Here To Start
+                Click Here To
+                Start
               </p>
             </div>
           )}
