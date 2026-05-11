@@ -75,18 +75,21 @@ const TypeInput = (props) => {
     setRevealedQuote("");
   }, [originalQuote]);
 
+  // Echo Mode Setup
   useEffect(() => {
     if (gameMode === "Echo Mode" && originalQuote) {
       const arr = (originalQuote || "")
         .split("")
-        .map((ch, i) => (ch === " " ? " " : i === 0 ? ch : "_"))
+        .map((ch, i) =>
+          ch === " " ? " " : i === 0 ? ch : "_"
+        )
         .join("");
 
       setRevealedQuote(arr);
     }
   }, [gameMode, originalQuote]);
 
-  // Echo mode auto speak after inactivity
+  // Echo Auto Speak
   useEffect(() => {
     if (gameMode === "Echo Mode" && originalQuote && voice) {
       const timer = setTimeout(() => {
@@ -99,7 +102,7 @@ const TypeInput = (props) => {
     }
   }, [gameMode, originalQuote, voice, isSpeaking]);
 
-  // Memory mode
+  // Memory Mode
   useEffect(() => {
     if (gameMode === "Memory Mode" && originalQuote) {
       setHiddenQuote(originalQuote);
@@ -112,7 +115,7 @@ const TypeInput = (props) => {
     }
   }, [gameMode, originalQuote]);
 
-  // Mirror mode
+  // Mirror Mode
   const reverseWords = (text) =>
     (text || "")
       .split(" ")
@@ -130,7 +133,7 @@ const TypeInput = (props) => {
     }
   }, [showConfirm]);
 
-  // Load voice safely
+  // Load Voice
   useEffect(() => {
     if (gameMode !== "Echo Mode") return;
 
@@ -198,7 +201,7 @@ const TypeInput = (props) => {
     setIsFocused(true);
   };
 
-  // SAFE SPEECH FUNCTION
+  // SPEAK FUNCTION
   const speakQuote = () => {
     if (gameMode !== "Echo Mode") return;
     if (!originalQuote) return;
@@ -256,7 +259,7 @@ const TypeInput = (props) => {
     startSpeaking();
   };
 
-  // SAFE CANCEL
+  // CANCEL SPEECH
   const cancelSpeech = () => {
     cancelSpeechRef.current = true;
 
@@ -344,7 +347,7 @@ const TypeInput = (props) => {
       }
 
       if (currIndex >= (originalQuote || "").length - 1) {
-        finishRun(currIndex);
+        finishRun();
       }
 
       return;
@@ -422,8 +425,7 @@ const TypeInput = (props) => {
     const accuracyLocal =
       typedChars === 0
         ? 0
-        : ((typedChars - errors) / typedChars) *
-          100;
+        : ((typedChars - errors) / typedChars) * 100;
 
     if (!multiplayer) {
       const currentData = {
@@ -466,110 +468,130 @@ const TypeInput = (props) => {
   };
 
   return (
-    <div className="absolute h-full w-full">
-      <div className="relative w-full py-5 px-[12%] flex flex-col items-center pt-40 gap-6">
-        <Bar
-          {...{
-            wpm,
-            accuracy,
-            time,
-            errors,
-            reactionTime,
-            handleReset,
-            setShowConfirm,
-            multiplayer,
-            gameMode,
-            handleFocus,
-          }}
-          isSpeaking={isSpeaking}
-          onReplay={speakQuote}
-          onStop={cancelSpeech}
-          onRefocus={handleFocus}
-        />
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="relative h-full w-full flex flex-col">
 
-        <div
-          className={`flex flex-wrap w-full leading-12 lg:leading-14 tracking-wider px-13 font-extralight ${styleMap[textColor]}`}
-          onClick={handleFocus}
-          style={{ fontSize: `${fontSize}px` }}
-        >
-          {displayWords.map((word, w) => (
-            <span
-              key={w}
-              className="transition-all duration-700"
-            >
-              {(word || "").split("").map((ch, c) => {
-                const i = getIndex(w, c);
-
-                const focus =
-                  isFocused && index === i;
-
-                const colorClass =
-                  status[i] === "wrong"
-                    ? "text-red-400"
-                    : status[i] === "correct"
-                    ? "text-gray-400"
-                    : "";
-
-                const hiddenByEcho =
-                  gameMode === "Echo Mode" &&
-                  revealedQuote &&
-                  revealedQuote[i] === "_";
-
-                return (
-                  <span
-                    key={i}
-                    className={`
-                      ${
-                        focus
-                          ? "border-b-2 border-white"
-                          : "border-b-transparent"
-                      }
-                      ${colorClass}
-                      ${hiddenByEcho ? "opacity-0" : ""}
-                    `}
-                  >
-                    {ch}
-                  </span>
-                );
-              })}
-
-              {w < displayWords.length - 1 && (
-                <span>&nbsp;</span>
-              )}
-            </span>
-          ))}
-
-          <input
-            type="text"
-            className="absolute opacity-0"
-            ref={inputRef}
-            onInput={checkValid}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            autoComplete="off"
-            spellCheck="false"
+        {/* TOP BAR */}
+        <div className="w-full pt-24 px-6 md:px-16 lg:px-28">
+          <Bar
+            {...{
+              wpm,
+              accuracy,
+              time,
+              errors,
+              reactionTime,
+              handleReset,
+              setShowConfirm,
+              multiplayer,
+              gameMode,
+              handleFocus,
+            }}
+            isSpeaking={isSpeaking}
+            onReplay={speakQuote}
+            onStop={cancelSpeech}
+            onRefocus={handleFocus}
           />
         </div>
 
+        {/* QUOTE AREA */}
+        <div className="flex-1 flex items-center justify-center px-6 md:px-16 lg:px-28 pb-24">
+          <div
+            className={`
+              w-full
+              max-w-6xl
+              tracking-wider
+              font-extralight
+              break-words
+              ${styleMap[textColor]}
+            `}
+            onClick={handleFocus}
+            style={{
+              fontSize: `${fontSize}px`,
+              lineHeight: "1.9",
+            }}
+          >
+            {displayWords.map((word, w) => (
+              <span key={w}>
+                {(word || "").split("").map((ch, c) => {
+                  const i = getIndex(w, c);
+
+                  const focus =
+                    isFocused && index === i;
+
+                  const colorClass =
+                    status[i] === "wrong"
+                      ? "text-red-400"
+                      : status[i] === "correct"
+                      ? "text-gray-500"
+                      : "";
+
+                  const hiddenByEcho =
+                    gameMode === "Echo Mode" &&
+                    revealedQuote &&
+                    revealedQuote[i] === "_";
+
+                  return (
+                    <span
+                      key={i}
+                      className={`
+                        transition-all duration-200
+                        ${
+                          focus
+                            ? "border-b-2 border-white"
+                            : ""
+                        }
+                        ${colorClass}
+                        ${
+                          hiddenByEcho
+                            ? "opacity-0"
+                            : "opacity-100"
+                        }
+                      `}
+                    >
+                      {ch}
+                    </span>
+                  );
+                })}
+
+                {w < displayWords.length - 1 && (
+                  <span>&nbsp;</span>
+                )}
+              </span>
+            ))}
+
+            <input
+              type="text"
+              className="absolute opacity-0 pointer-events-none"
+              ref={inputRef}
+              onInput={checkValid}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              autoComplete="off"
+              spellCheck="false"
+            />
+          </div>
+        </div>
+
+        {/* START OVERLAY */}
         {!hasStarted &&
           !multiplayer &&
           gameMode !== "Color Clash" && (
             <div
-              className="absolute inset-0 pt-40 flex justify-center items-center text-2xl cursor-pointer backdrop-blur-sm text-cyan-500"
+              className="absolute inset-0 flex items-center justify-center backdrop-blur-sm cursor-pointer z-50"
               onClick={handleStart}
             >
-              <p className="neon-blue">
-                click here to start
+              <p className="text-2xl md:text-3xl neon-blue">
+                Click Here To Start
               </p>
             </div>
           )}
-      </div>
 
-      <audio
-        ref={keySoundRef}
-        src="/sound/key-stroke2.wav"
-        preload="auto"
-      />
+        <audio
+          ref={keySoundRef}
+          src="/sound/key-stroke2.wav"
+          preload="auto"
+        />
+      </div>
     </div>
   );
 };
