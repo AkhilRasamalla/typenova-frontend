@@ -63,21 +63,21 @@ const TypeInput = (props) => {
     };
   }, []);
 
-  // set base quote and words when prop changes
+  // SAFE QUOTE SETUP
   useEffect(() => {
-    if (originalQuote) {
-      setQuote(originalQuote);
-      setWords(originalQuote.split(" "));
-      setStatus({});
-      setIndex(0);
-      setHiddenQuote("");
-      setRevealedQuote("");
-    }
+    const safeQuote = originalQuote || "";
+
+    setQuote(safeQuote);
+    setWords(safeQuote.split(" "));
+    setStatus({});
+    setIndex(0);
+    setHiddenQuote("");
+    setRevealedQuote("");
   }, [originalQuote]);
 
   useEffect(() => {
     if (gameMode === "Echo Mode" && originalQuote) {
-      const arr = originalQuote
+      const arr = (originalQuote || "")
         .split("")
         .map((ch, i) => (ch === " " ? " " : i === 0 ? ch : "_"))
         .join("");
@@ -114,7 +114,7 @@ const TypeInput = (props) => {
 
   // Mirror mode
   const reverseWords = (text) =>
-    text
+    (text || "")
       .split(" ")
       .map((w) => [...w].reverse().join(""))
       .join(" ");
@@ -216,7 +216,7 @@ const TypeInput = (props) => {
 
     setIsSpeaking(true);
 
-    const wordsArr = originalQuote.split(" ");
+    const wordsArr = (originalQuote || "").split(" ");
 
     const speakWord = (word) =>
       new Promise((resolve) => {
@@ -331,7 +331,7 @@ const TypeInput = (props) => {
       e.target.value = "";
 
       const newProgressSpace =
-        ((currIndex + 1) / originalQuote.length) *
+        ((currIndex + 1) / (originalQuote || "").length) *
         100;
 
       setProgress(newProgressSpace);
@@ -343,7 +343,7 @@ const TypeInput = (props) => {
         });
       }
 
-      if (currIndex >= originalQuote.length - 1) {
+      if (currIndex >= (originalQuote || "").length - 1) {
         finishRun(currIndex);
       }
 
@@ -366,7 +366,7 @@ const TypeInput = (props) => {
     if (gameMode === "Echo Mode") {
       setRevealedQuote((prev) => {
         const chars = (
-          prev || originalQuote
+          prev || originalQuote || ""
         ).split("");
 
         chars[currIndex] =
@@ -385,7 +385,7 @@ const TypeInput = (props) => {
     e.target.value = "";
 
     const newProgress =
-      ((currIndex + 1) / originalQuote.length) *
+      ((currIndex + 1) / (originalQuote || "").length) *
       100;
 
     setProgress(newProgress);
@@ -397,13 +397,13 @@ const TypeInput = (props) => {
       });
     }
 
-    if (currIndex >= originalQuote.length - 1) {
+    if (currIndex >= (originalQuote || "").length - 1) {
       finishRun();
     }
   };
 
   const finishRun = () => {
-    const typedChars = quote.length;
+    const typedChars = (quote || "").length;
 
     const errors = Object.values(status).filter(
       (s) => s === "wrong"
@@ -497,7 +497,7 @@ const TypeInput = (props) => {
               key={w}
               className="transition-all duration-700"
             >
-              {word.split("").map((ch, c) => {
+              {(word || "").split("").map((ch, c) => {
                 const i = getIndex(w, c);
 
                 const focus =
