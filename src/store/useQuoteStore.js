@@ -17,7 +17,7 @@ const savedEchoStats =
   JSON.parse(localStorage.getItem("echoBest")) || {};
 
 const useQuoteStore = create((set) => ({
-  quote: null,
+  quote: "",
   loading: false,
   error: null,
 
@@ -165,7 +165,7 @@ const useQuoteStore = create((set) => ({
     });
   },
 
-  fetchData: async (endpoint, navigate, redirectPath) => {
+  fetchData: async (endpoint = "", navigate, redirectPath) => {
     set({
       loading: true,
       error: null,
@@ -185,23 +185,31 @@ const useQuoteStore = create((set) => ({
     }, timeoutLimit);
 
     try {
-
-      const response = await api.get();
+      const response = await api.get(endpoint);
 
       clearTimeout(timeoutId);
 
+      console.log("API RESPONSE:", response.data);
+
+      const fetchedQuote =
+        response?.data?.quote ||
+        response?.data?.text ||
+        response?.data?.content ||
+        "Practice makes progress.";
+
       set({
-        quote: response.data.text,
+        quote: fetchedQuote,
         loading: false,
+        error: null,
       });
 
     } catch (err) {
-
       clearTimeout(timeoutId);
 
       console.error(err);
 
       set({
+        quote: "Practice makes progress.",
         error: "Server is inactive or unreachable...",
         loading: false,
       });
@@ -212,7 +220,7 @@ const useQuoteStore = create((set) => ({
     }
   },
 
-  setQuote: (quote) => set({ quote }),
+  setQuote: (quote) => set({ quote: quote || "" }),
 }));
 
 export default useQuoteStore;
