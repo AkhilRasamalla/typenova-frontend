@@ -1,5 +1,4 @@
 import React from "react";
-import api from "../axios.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import TypeInput from "../components/TypeInput.jsx";
@@ -14,18 +13,27 @@ const QuickPlay = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentStats, setCurrentStats] = useState(null);
+
   const navigate = useNavigate();
-  const { fetchData, loading, error, quote, bestStats, saveQuickPlayStats } =
-    useQuoteStore();
+
+  const {
+    fetchData,
+    loading,
+    error,
+    quote,
+    bestStats,
+    saveQuickPlayStats,
+  } = useQuoteStore();
 
   const QuickPlayBest = bestStats.quickPlay;
 
   useEffect(() => {
-    fetchData("/random", navigate, "/home");
+    fetchData("", navigate, "/home");
   }, []);
 
   const handleReset = () => {
-    fetchData("/random", navigate, "/home");
+    fetchData("", navigate, "/home");
+
     setShowConfirm(false);
     setIsComplete(false);
   };
@@ -34,12 +42,11 @@ const QuickPlay = () => {
     setShowConfirm(false);
     navigate(-1);
   };
-  // 🌀 Loading Screen
+
   if (loading) {
     return <Loading image={Images.QuickLoadImg} />;
   }
 
-  // ⚠️ Error Screen
   if (error) {
     return <ServerError error={error} />;
   }
@@ -47,9 +54,10 @@ const QuickPlay = () => {
   return (
     <div className="relative h-full w-full">
       <div
-        className={`absolute inset-0 bg-cover bg-center blur-[6px]`}
+        className="absolute inset-0 bg-cover bg-center blur-[6px]"
         style={{ backgroundImage: `url(${Images.InputImg})` }}
       />
+
       <div className="absolute inset-0 bg-black/85" />
 
       {(isComplete || showConfirm) && (
@@ -80,7 +88,7 @@ const QuickPlay = () => {
           setShowConfirm={setShowConfirm}
           setIsComplete={setIsComplete}
           setCurrentStats={setCurrentStats}
-          gameMode={"quikPlay"}
+          gameMode={"quickPlay"}
           bestStats={QuickPlayBest}
           saveStats={saveQuickPlayStats}
         />

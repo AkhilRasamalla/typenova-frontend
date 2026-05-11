@@ -33,7 +33,7 @@ const LandingPage = () => {
       <div className="relative  h-full flex flex-col items-center justify-between text-[1.3rem] font-extrabold uppercase tracking-[0.075em] text-white">
         <div className="h-30 px-2 glow mt-35 flex items-center justify-center">
           <div className="h-24 px-4 glow flex items-center justify-center">
-            welcome to TypeRush
+            welcome to TypeNova
           </div>
         </div>
 
