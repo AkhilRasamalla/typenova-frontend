@@ -302,12 +302,13 @@ const Settings = () => {
                   <NetworkPing
                     id="main"
                     name="Main Backend Server"
-                    url={`${import.meta.env.VITE_BACKEND_URL}/health`}
+                    url="https://typenova-backend-on7p.onrender.com/health"
                   />
+
                   <NetworkPing
-                    ide="quote"
-                    name="Random Quote API"
-                    url={`${import.meta.env.VITE_QUOTE_URL}/api/get/random/lower`}
+                    id="quote"
+                    name="Quote API"
+                    url="https://typenova-backend-on7p.onrender.com/api/get"
                   />
                 </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate } from "react-router";
+
 import TypeInput from "../components/TypeInput.jsx";
 import useQuoteStore from "../store/useQuoteStore.js";
 import Results from "../components/Results.jsx";
@@ -10,36 +11,51 @@ import Images from "../constants/images.js";
 import DifficultyPopUp from "../components/DifficultyPopUp.jsx";
 
 const PracticeMode = () => {
-  const { quote, loading, error, fetchData } = useQuoteStore();
+  const navigate = useNavigate();
+
+  const {
+    quote,
+    loading,
+    error,
+    fetchData,
+  } = useQuoteStore();
+
   const [isComplete, setIsComplete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentStats, setCurrentStats] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [difficulty, setDifficulty] = useState("");
-  const navigate = useNavigate();
-
-  const handleReset = () => {
-    const endpoint = `/random/${difficulty}`;
-    fetchData(endpoint, navigate, "/solo-play");
-    setShowConfirm(false);
-    setIsComplete(false);
-  };
 
   useEffect(() => {
     setShowPopup(true);
   }, []);
 
-  const handleConfirmDifficulty = (difficultyParam) => {
-    const text =
-      difficultyParam === "Easy"
-        ? "lower"
-        : difficultyParam === "Medium"
-        ? "upper"
-        : "mixed";
-    setDifficulty(text);
+  const handleConfirmDifficulty = async (
+    difficultyParam
+  ) => {
+    let selectedDifficulty = "";
+
+    if (difficultyParam === "Easy") {
+      selectedDifficulty = "lower";
+    } else if (difficultyParam === "Medium") {
+      selectedDifficulty = "upper";
+    } else {
+      selectedDifficulty = "mixed";
+    }
+
+    setDifficulty(selectedDifficulty);
+
     setShowPopup(false);
-    const endpoint = `/random/${text}`;
-    fetchData(endpoint, navigate, "/solo-play");
+
+    await fetchData("", navigate, "/solo-play");
+  };
+
+  const handleReset = async () => {
+    await fetchData("", navigate, "/solo-play");
+
+    setShowConfirm(false);
+    setIsComplete(false);
+    setCurrentStats(null);
   };
 
   const handleExit = () => {
@@ -47,63 +63,70 @@ const PracticeMode = () => {
     navigate("/solo-play");
   };
 
-  if (loading) return <Loading image={Images.QuickLoadImg} />;
-  if (error) return <ServerError error={error} />;
+  if (loading) {
+    return <Loading image={Images.QuickLoadImg} />;
+  }
+
+  if (error) {
+    return <ServerError error={error} />;
+  }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       <div
-        className={`absolute inset-0 bg-cover bg-center blur-[6px]`}
-        style={{ backgroundImage: `url(${Images.InputImg})` }}
+        className="absolute inset-0 bg-cover bg-center blur-[6px]"
+        style={{
+          backgroundImage: `url(${Images.InputImg})`,
+        }}
       />
-      <div className="absolute inset-0 bg-black/80" />
+
+      <div className="absolute inset-0 bg-black/85" />
 
       {(isComplete || showConfirm || showPopup) && (
         <div className="absolute inset-0 z-[9999] flex justify-center items-start bg-black/40 backdrop-blur-sm">
-          {isComplete && currentStats && (
+          {isComplete && currentStats ? (
             <Results
               handleReset={handleReset}
-              wpm={currentStats.wpm}
-              accuracy={currentStats.accuracy}
-              time={currentStats.time}
-              errors={currentStats.errors}
-              quitPath={"/solo-play"}
+              wpm={currentStats?.wpm || 0}
+              accuracy={currentStats?.accuracy || 0}
+              time={currentStats?.time || 0}
+              errors={currentStats?.errors || 0}
+              quitPath="/solo-play"
             />
-          )}
-
-          {showPopup && (
+          ) : showPopup ? (
             <DifficultyPopUp
               title="Practice Mode"
               onConfirm={handleConfirmDifficulty}
               onCancel={() => navigate(-1)}
             />
-          )}
-
-          {showConfirm && (
-            <ConfirmPopUp
-              handleReset={handleReset}
-              setShowConfirm={setShowConfirm}
-              handleExit={handleExit}
-            />
+          ) : (
+            showConfirm && (
+              <ConfirmPopUp
+                handleReset={handleReset}
+                setShowConfirm={setShowConfirm}
+                handleExit={handleExit}
+              />
+            )
           )}
         </div>
       )}
 
-      <div className="relative h-full z-10">
-        {
+      {!showPopup && (
+        <div className="relative h-full z-10">
           <TypeInput
-            originalQuote={quote}
+            originalQuote={quote || ""}
             handleReset={handleReset}
             showConfirm={showConfirm}
             setShowConfirm={setShowConfirm}
             setIsComplete={setIsComplete}
             bestStats={null}
             saveStats={null}
-            gameMode="Practice Mode"
+            gameMode="practice"
+            difficulty={difficulty}
             setCurrentStats={setCurrentStats}
           />
-        }
-      </div>
+        </div>
+      )}
     </div>
   );
 };

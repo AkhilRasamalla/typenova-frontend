@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import TypeInput from "../components/TypeInput.jsx";
 import DifficultyPopUp from "../components/DifficultyPopUp.jsx";
 import useQuoteStore from "../store/useQuoteStore.js";
@@ -12,10 +13,21 @@ import Descriptive from "../components/Descriptive.jsx";
 
 const MemoryMode = () => {
   const navigate = useNavigate();
-  const { fetchData, loading, error, quote, bestStats, saveMemoryStats } =
-    useQuoteStore();
 
-  const memoryBest = bestStats?.memory || null;
+  const {
+    fetchData,
+    loading,
+    error,
+    quote,
+    bestStats,
+    saveMemoryStats,
+  } = useQuoteStore();
+
+  const memoryBest = bestStats?.memory || {
+    wpm: 0,
+    accuracy: 0,
+    time: 0,
+  };
 
   const [showIntro, setShowIntro] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
@@ -30,24 +42,28 @@ const MemoryMode = () => {
   };
 
   const handleConfirmDifficulty = async (difficultyParam) => {
-    const text =
-      difficultyParam === "Easy"
-        ? "lower"
-        : difficultyParam === "Medium"
-        ? "upper"
-        : "mixed";
+    let selectedDifficulty = "";
 
-    setDifficulty(text);
+    if (difficultyParam === "Easy") {
+      selectedDifficulty = "lower";
+    } else if (difficultyParam === "Medium") {
+      selectedDifficulty = "upper";
+    } else {
+      selectedDifficulty = "mixed";
+    }
+
+    setDifficulty(selectedDifficulty);
     setShowPopup(false);
 
-    const endpoint = `/random/${text}`;
-    await fetchData(endpoint, navigate, "/rush-mode");
+    await fetchData("", navigate, "/rush-mode");
   };
 
-  const handleReset = () => {
-    fetchData(`/random/${difficulty}`, navigate, "/rush-mode");
+  const handleReset = async () => {
+    await fetchData("", navigate, "/rush-mode");
+
     setIsComplete(false);
     setCurrentStats(null);
+    setShowConfirm(false);
   };
 
   const handleExit = () => {
@@ -55,62 +71,80 @@ const MemoryMode = () => {
     navigate("/rush-mode");
   };
 
-  if (loading) return <Loading image={Images.QuickLoadImg} />;
-  if (error) return <ServerError error={error} />;
+  if (loading) {
+    return <Loading image={Images.QuickLoadImg} />;
+  }
+
+  if (error) {
+    return <ServerError error={error} />;
+  }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center blur-[6px]"
-        style={{ backgroundImage: `url(${Images.InputImg})` }}
+        style={{
+          backgroundImage: `url(${Images.InputImg})`,
+        }}
       />
+
       <div className="absolute inset-0 bg-black/85" />
 
       {showIntro && !isComplete && (
-        <Descriptive
-          title={"🧠 Memory Mode"}
-          description={
-            "Memorize the quote before it fades! After a few seconds, random letters will vanish — type from memory and test your brain’s recall speed."
-          }
-          handleStart={handleStartIntro}
-        />
+        <div className="relative z-20">
+          <Descriptive
+            title="🧠 Memory Mode"
+            description="Memorize the quote before it fades! After a few seconds, random letters will vanish — type from memory and test your brain’s recall speed."
+            handleStart={handleStartIntro}
+          />
+        </div>
       )}
 
       {showPopup && (
-        <DifficultyPopUp
-          title="Memory Mode"
-          onConfirm={handleConfirmDifficulty}
-          onCancel={() => navigate(-1)}
-        />
+        <div className="relative z-30">
+          <DifficultyPopUp
+            title="Memory Mode"
+            onConfirm={handleConfirmDifficulty}
+            onCancel={() => navigate(-1)}
+          />
+        </div>
       )}
 
       {!showIntro && !showPopup && quote && (
-        <TypeInput
-          originalQuote={quote}
-          handleReset={handleReset}
-          showConfirm={showConfirm}
-          setShowConfirm={setShowConfirm}
-          setIsComplete={setIsComplete}
-          setCurrentStats={setCurrentStats}
-          gameMode="Memory Mode"
-          bestStats={memoryBest}
-          saveStats={saveMemoryStats}
-          handleExit={handleExit}
-        />
+        <div className="relative z-10 h-full">
+          <TypeInput
+            originalQuote={quote || ""}
+            handleReset={handleReset}
+            showConfirm={showConfirm}
+            setShowConfirm={setShowConfirm}
+            setIsComplete={setIsComplete}
+            setCurrentStats={setCurrentStats}
+            gameMode="memory"
+            difficulty={difficulty}
+            bestStats={memoryBest}
+            saveStats={saveMemoryStats}
+          />
+        </div>
       )}
 
-      {isComplete && currentStats && (
-        <Results
-          wpm={currentStats.wpm}
-          accuracy={currentStats.accuracy}
-          errors={currentStats.errors}
-          handleReset={handleReset}
-          quitPath="/rush-mode"
-        />
-      )}
-
-      {showConfirm && (
-        <ConfirmPopUp handleExit={handleExit} setShowConfirm={setShowConfirm} />
+      {(isComplete || showConfirm) && (
+        <div className="absolute inset-0 z-[9999] flex justify-center items-start bg-black/40 backdrop-blur-sm">
+          {isComplete ? (
+            <Results
+              wpm={currentStats?.wpm || 0}
+              accuracy={currentStats?.accuracy || 0}
+              errors={currentStats?.errors || 0}
+              time={currentStats?.time || 0}
+              handleReset={handleReset}
+              quitPath="/rush-mode"
+            />
+          ) : (
+            <ConfirmPopUp
+              handleExit={handleExit}
+              setShowConfirm={setShowConfirm}
+            />
+          )}
+        </div>
       )}
     </div>
   );

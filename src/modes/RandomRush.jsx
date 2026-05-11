@@ -1,7 +1,6 @@
-import React from "react";
-import api from "../axios.js";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+
 import TypeInput from "../components/TypeInput.jsx";
 import useQuoteStore from "../store/useQuoteStore.js";
 import Results from "../components/Results.jsx";
@@ -11,21 +10,37 @@ import ServerError from "../components/ServerError.jsx";
 import Images from "../constants/images.js";
 
 const RandomRush = () => {
-  const { quote, loading, error, fetchData } = useQuoteStore();
-  const [soundOn, setSoundOn] = useState(true);
+  const navigate = useNavigate();
+
+  const {
+    quote,
+    loading,
+    error,
+    fetchData,
+    bestStats,
+    saveRandomRushStats,
+  } = useQuoteStore();
+
   const [isComplete, setIsComplete] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [currentStats, setCurrentStats] = useState(null);
-  const navigate = useNavigate();
+
+  const randomRushBest = bestStats?.randomRush || {
+    wpm: 0,
+    accuracy: 0,
+    time: 0,
+  };
 
   useEffect(() => {
-    fetchData("/random", navigate, "/home");
+    fetchData("", navigate, "/home");
   }, []);
 
   const handleReset = () => {
-    fetchData("/random", navigate, "/home");
+    fetchData("", navigate, "/home");
+
     setShowConfirm(false);
     setIsComplete(false);
+    setCurrentStats(null);
   };
 
   const handleExit = () => {
@@ -33,54 +48,56 @@ const RandomRush = () => {
     navigate("/solo-play");
   };
 
-  // 🌀 Loading Screen
   if (loading) {
-    return <Loading image={Images.QuickLoadImg}/>;
+    return <Loading image={Images.QuickLoadImg} />;
   }
 
-  // ⚠️ Error Screen
   if (error) {
     return <ServerError error={error} />;
   }
 
   return (
-    <div className="relative h-full w-full">
-      <div className={`absolute inset-0  bg-cover bg-center blur-[6px]`} style={{ backgroundImage: `url(${Images.InputImg})` }}/>
-      <div className="absolute inset-0 bg-black/80" />
+    <div className="relative h-full w-full overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center blur-[6px]"
+        style={{
+          backgroundImage: `url(${Images.InputImg})`,
+        }}
+      />
+
+      <div className="absolute inset-0 bg-black/85" />
 
       {(isComplete || showConfirm) && (
-        <div className="absolute inset-0 z-[9999] flex justify-center items-start pt-26  bg-black/40 backdrop-blur-sm">
-          {isComplete && (
-            <div className="z-50">
-              <Results
-                handleReset={handleReset}
-                wpm={currentStats.wpm}
-                accuracy={currentStats.accuracy}
-                time={currentStats.time}
-                errors={currentStats.errors}
-                quitPath={"solo-play"}
-              />
-            </div>
-          )}
-
-          {showConfirm && (
-            <ConfirmPopUp
+        <div className="absolute inset-0 z-[9999] flex justify-center items-start bg-black/40 backdrop-blur-sm">
+          {isComplete ? (
+            <Results
               handleReset={handleReset}
-              setShowConfirm={setShowConfirm}
+              wpm={currentStats?.wpm || 0}
+              accuracy={currentStats?.accuracy || 0}
+              time={currentStats?.time || 0}
+              errors={currentStats?.errors || 0}
+              quitPath="/solo-play"
+            />
+          ) : (
+            <ConfirmPopUp
               handleExit={handleExit}
+              setShowConfirm={setShowConfirm}
             />
           )}
         </div>
       )}
 
-      <div className="relative h-full z-10">
+      <div className="relative z-10 h-full">
         <TypeInput
-          originalQuote={quote}
+          originalQuote={quote || ""}
           handleReset={handleReset}
           showConfirm={showConfirm}
           setShowConfirm={setShowConfirm}
           setIsComplete={setIsComplete}
           setCurrentStats={setCurrentStats}
+          gameMode="randomRush"
+          bestStats={randomRushBest}
+          saveStats={saveRandomRushStats}
         />
       </div>
     </div>
