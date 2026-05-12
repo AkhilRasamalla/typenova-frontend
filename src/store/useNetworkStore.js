@@ -2,7 +2,7 @@ import { create } from "zustand";
 import axios from "axios";
 
 const BACKEND_URL =
-  "https://typenova-backend-on7p.onrender.com";
+  "https://typerush-backend-on7p.onrender.com";
 
 const useNetworkStore = create((set, get) => ({
   servers: {

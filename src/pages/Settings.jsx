@@ -302,13 +302,13 @@ const Settings = () => {
                   <NetworkPing
                     id="main"
                     name="Main Backend Server"
-                    url="https://typenova-backend-on7p.onrender.com/health"
+                    url="https://typerush-backend-on7p.onrender.com/health"
                   />
 
                   <NetworkPing
                     id="quote"
                     name="Quote API"
-                    url="https://typenova-backend-on7p.onrender.com/api/get"
+                    url="https://typerush-backend-on7p.onrender.com/api/get"
                   />
                 </div>
 
